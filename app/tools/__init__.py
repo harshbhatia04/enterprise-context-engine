@@ -1,0 +1,1 @@
+"""Tool-style retrieval package."""

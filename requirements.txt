@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+streamlit
+pydantic
+pytest
+python-dotenv
+rank-bm25
+sentence-transformers
+numpy
+scikit-learn
+pyyaml
+requests
+qdrant-client

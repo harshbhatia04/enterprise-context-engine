@@ -1,0 +1,22 @@
+# Release Checklist
+
+- [ ] Run `python scripts/check_project.py`
+- [ ] Run `python -m ruff check app scripts tests --select F`
+- [ ] Run `python scripts/run_eval.py --source sample_docs`
+- [ ] Run `python scripts/run_eval.py --source gitlab_handbook`
+- [ ] Run `python -m pytest`
+- [ ] Verify API starts
+- [ ] Verify dashboard starts
+- [ ] Verify auth off flow
+- [ ] Verify auth `api_key` flow
+- [ ] Verify no restricted leakage
+- [ ] Update README test count
+- [ ] Review `docs/LIMITATIONS.md`
+- [ ] Capture dashboard screenshots
+- [ ] Record 3-5 minute demo video
+- [ ] Add GitHub repo description and topics
+- [ ] Pin repository
+- [ ] Add repo link to resume/LinkedIn
+- [ ] Create v1.0.0 Git tag
+- [ ] Verify CI passes on GitHub
+- [ ] Create GitHub release/tag
