@@ -167,12 +167,18 @@ API: http://localhost:8000
 Dashboard: http://localhost:8501
 ```
 
-## Dashboard UI
+## Dashboard
 
-The project includes a polished Streamlit dashboard for demos, screenshots, and local walkthroughs. In the default
-local mode, auth is off and no API key is required. The API key input appears only when `ECE_AUTH_MODE=api_key`.
+The project includes a screenshot-ready dashboard for local demos. The dashboard connects to the local FastAPI backend
+and does not require an external API in the default mode.
 
-The dashboard connects to the local FastAPI backend. No external API is required for the default demo.
+In default local mode:
+
+- Auth is off
+- no API key is required
+- Data source and demo user can be selected from the sidebar
+
+The API key input appears only when `ECE_AUTH_MODE=api_key`.
 
 ## Quickstart Docker
 

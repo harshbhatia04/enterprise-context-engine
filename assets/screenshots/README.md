@@ -12,6 +12,15 @@ Screenshot tips:
 - Capture the Ask Assistant page, Evaluation page, and Logs page.
 - Keep Screenshot mode enabled when capturing final images.
 
+Before taking screenshots:
+
+1. Start FastAPI backend.
+2. Start dashboard.
+3. Use screenshot mode.
+4. Keep Auth: off unless specifically demonstrating API-key auth.
+5. Do not show API keys.
+6. Do not show raw debug output.
+
 Expected screenshots:
 
 1. `01-dashboard-home.png` - dashboard landing/health page
@@ -21,7 +30,6 @@ Expected screenshots:
 5. `05-evidence-gate-abstention.png` - unreleased acquisition plan safe abstention
 6. `06-evaluation-metrics.png` - eval page showing sample/gitlab metrics
 7. `07-sanitized-query-logs.png` - sanitized query logs
-8. `08-architecture-diagram.png` - architecture diagram or rendered screenshot
 
 Use real screenshots from a local run. Do not include secrets, API keys, private documents, or raw restricted context.
 

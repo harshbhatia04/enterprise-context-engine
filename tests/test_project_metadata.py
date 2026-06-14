@@ -14,6 +14,7 @@ def test_readme_exists_and_contains_portfolio_sections() -> None:
     assert "tests-233" in text or "Tests" in text
     assert "no API key is required" in text
     assert "local FastAPI backend" in text
+    assert "does not require an external API" in text
 
 
 def test_docs_files_exist() -> None:
@@ -56,12 +57,15 @@ def test_ci_and_quality_files_exist() -> None:
 def test_dashboard_contains_showcase_copy_and_auth_branch() -> None:
     text = (PROJECT_ROOT / "dashboard" / "streamlit_app.py").read_text(encoding="utf-8")
 
+    assert 'layout="wide"' in text
     assert "No API key required for local demo" in text
+    assert "Screenshot mode" in text
     assert "Permission-aware context engineering" in text
     assert "Evidence Gate" in text
     assert 'auth_mode == "api_key"' in text
     assert 'st.text_input("API key", type="password", key="api_key")' in text
     assert 'st.session_state["api_key"] = ""' in text
+    assert text.index('auth_mode == "api_key"') < text.index('st.text_input("API key"')
 
 
 def test_ignore_files_protect_local_artifacts() -> None:
