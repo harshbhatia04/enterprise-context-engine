@@ -43,6 +43,17 @@ def test_demo_video_script_contains_key_demo_queries() -> None:
     assert "remote work" in text
     assert "unreleased acquisition plan" in text
     assert "evidence gate" in text
+    assert "local FastAPI backend" in text
+    assert "no API key is required" in text
+
+
+def test_screenshot_guide_contains_safety_tips() -> None:
+    text = read("assets/screenshots/README.md")
+
+    assert "Use the polished dashboard" in text
+    assert "Do not show API keys" in text
+    assert "Do not show raw restricted context" in text
+    assert "07-sanitized-query-logs.png" in text
 
 
 def test_github_showcase_contains_suggested_topics() -> None:

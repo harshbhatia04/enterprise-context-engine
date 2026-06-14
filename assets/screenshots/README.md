@@ -1,15 +1,27 @@
 # Screenshot Guide
 
-Add screenshots:
+Use the polished dashboard for LinkedIn, portfolio, and GitHub README screenshots. Use `Auth: off` for most
+screenshots so the UI clearly shows that no API key is required for the local demo.
+
+Screenshot tips:
+
+- Use the polished dashboard.
+- Use Auth: off for most screenshots.
+- Do not show API keys.
+- Do not show raw restricted context.
+- Capture the Ask Assistant page, Evaluation page, and Logs page.
+- Keep Screenshot mode enabled when capturing final images.
+
+Expected screenshots:
 
 1. `01-dashboard-home.png` - dashboard landing/health page
-2. `02-sample-finance-answer.png` - `finance_user` invoice answer with citations
-3. `03-intern-safe-abstain.png` - `intern_user` blocked from finance answer
-4. `04-gitlab-remote-work.png` - public GitLab-style remote work answer
-5. `05-evidence-gate-abstain.png` - unreleased acquisition plan safe abstention
+2. `02-finance-answer-with-citations.png` - `finance_user` invoice answer with citations
+3. `03-intern-safe-abstention.png` - `intern_user` blocked from finance answer
+4. `04-gitlab-public-answer.png` - public GitLab-style remote work answer
+5. `05-evidence-gate-abstention.png` - unreleased acquisition plan safe abstention
 6. `06-evaluation-metrics.png` - eval page showing sample/gitlab metrics
-7. `07-query-logs.png` - sanitized query logs
-8. `08-architecture.png` - Mermaid architecture diagram or rendered screenshot
+7. `07-sanitized-query-logs.png` - sanitized query logs
+8. `08-architecture-diagram.png` - architecture diagram or rendered screenshot
 
 Use real screenshots from a local run. Do not include secrets, API keys, private documents, or raw restricted context.
 

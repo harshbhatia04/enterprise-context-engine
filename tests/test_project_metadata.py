@@ -12,6 +12,8 @@ def test_readme_exists_and_contains_portfolio_sections() -> None:
     assert "context engineering" in text.lower()
     assert "Interview Pitch" in text
     assert "tests-233" in text or "Tests" in text
+    assert "no API key is required" in text
+    assert "local FastAPI backend" in text
 
 
 def test_docs_files_exist() -> None:
@@ -49,6 +51,17 @@ def test_ci_and_quality_files_exist() -> None:
     assert (PROJECT_ROOT / "requirements-dev.txt").exists()
     assert (PROJECT_ROOT / "pyproject.toml").exists()
     assert (PROJECT_ROOT / "scripts" / "check_project.py").exists()
+
+
+def test_dashboard_contains_showcase_copy_and_auth_branch() -> None:
+    text = (PROJECT_ROOT / "dashboard" / "streamlit_app.py").read_text(encoding="utf-8")
+
+    assert "No API key required for local demo" in text
+    assert "Permission-aware context engineering" in text
+    assert "Evidence Gate" in text
+    assert 'auth_mode == "api_key"' in text
+    assert 'st.text_input("API key", type="password", key="api_key")' in text
+    assert 'st.session_state["api_key"] = ""' in text
 
 
 def test_ignore_files_protect_local_artifacts() -> None:

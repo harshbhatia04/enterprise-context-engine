@@ -6,6 +6,18 @@ Most RAG demos retrieve chunks blindly. Enterprise LLM systems need permission-a
 
 Enterprise Context Engine demonstrates how those pieces fit together in a local, inspectable project.
 
+For this local demo, auth is off, so no API key is required. The dashboard connects to the local FastAPI backend
+running at `127.0.0.1:8000`.
+
+## Screenshot-Friendly Demo Sequence
+
+1. Show the dashboard Health page with the local backend online.
+2. Show the finance user invoice answer with citations.
+3. Show the intern safe abstention for the same finance question.
+4. Show the GitLab Handbook-style remote work public answer.
+5. Show the evidence gate abstention for an unsupported acquisition-plan question.
+6. Show the Evaluation page with deterministic metrics.
+
 ## 0:30-1:00 - Architecture
 
 The request enters through FastAPI or the Streamlit dashboard. A query analyzer and retrieval router choose BM25, dense, hybrid, metadata, or section lookup. Progressive disclosure narrows broad results into focused chunks. Access control filters evidence before generation. The evidence gate checks whether accessible context supports the answer. Then the answer generator returns citation-backed output or safe abstention. Deterministic evaluation checks quality and restricted leak behavior.
