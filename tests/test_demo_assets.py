@@ -56,6 +56,17 @@ def test_screenshot_guide_contains_safety_tips() -> None:
     assert "07-sanitized-query-logs.png" in text
 
 
+def test_dashboard_data_source_sync_copy_exists() -> None:
+    text = read("dashboard/streamlit_app.py")
+
+    assert "selected_data_source" in text
+    assert "active_backend_data_source" in text
+    assert "Public handbook demo" in text
+    assert "Load data source" in text
+    assert '"gitlab_handbook", "intern_user"' in text
+    assert "What does the handbook say about remote work?" in text
+
+
 def test_github_showcase_contains_suggested_topics() -> None:
     text = read("docs/GITHUB_SHOWCASE.md")
 

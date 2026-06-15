@@ -99,6 +99,7 @@ class Citation:
     effective_date: str | None = None
     retrieval_method: str | None = None
     score: float | None = None
+    source_name: str | None = None
 
 
 @dataclass(frozen=True)

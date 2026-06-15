@@ -25,6 +25,18 @@ class CitationBuilder:
                     effective_date=chunk.metadata.get("effective_date"),
                     retrieval_method=chunk.retrieval_method,
                     score=chunk.final_score,
+                    source_name=chunk.metadata.get("source_name") or _source_name_from_path(
+                        chunk.metadata.get("source_path"),
+                    ),
                 )
             )
         return citations
+
+
+def _source_name_from_path(source_path: object) -> str | None:
+    normalized = str(source_path or "").replace("\\", "/").lower()
+    if "gitlab_handbook" in normalized:
+        return "gitlab_handbook"
+    if "sample_docs" in normalized:
+        return "sample_docs"
+    return None

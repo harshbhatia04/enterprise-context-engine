@@ -1,4 +1,4 @@
-from app.generation.llm_client import MockLLMClient
+from app.generation.llm_client import MockLLMClient, clean_answer_text
 from app.security.access_control import SAFE_ABSTAIN_MESSAGE
 
 
@@ -11,6 +11,22 @@ Accessible context:
 Document: Invoice Approval Policy
 Text:
 Teams should capture approval evidence before work proceeds.
+
+Instructions:
+- Answer only from the accessible context.
+"""
+
+HANDBOOK_USER_PROMPT = """User question:
+What does the handbook say about remote work?
+
+Accessible context:
+[1]
+Document: GitLab Remote Work Handbook
+Department: hr
+Section: Remote Work Practices
+Source: gitlab_handbook
+Text:
+Team members document decisions, prefer asynchronous updates, and make working agreements visible across time zones.
 
 Instructions:
 - Answer only from the accessible context.
@@ -43,6 +59,30 @@ def test_mock_llm_normal_context_returns_citation_marker() -> None:
 
     assert "[1]" in answer
     assert "approval evidence" in answer
+
+
+def test_mock_llm_handbook_answer_is_source_aware_and_cited() -> None:
+    answer, _ = MockLLMClient().generate(SYSTEM_PROMPT, HANDBOOK_USER_PROMPT)
+    normalized = answer.lower()
+
+    assert "handbook-style guidance" in normalized
+    assert "remote work" in normalized
+    assert "asynchronous updates" in normalized
+    assert "[1]" in answer
+    assert "official GitLab" not in answer
+
+
+def test_mock_llm_cleans_spacing_and_capitalization_artifacts() -> None:
+    dirty = "This document defines how the Hr team applies the policy in d aily operations with ap proval ex pected. [1]"
+
+    cleaned = clean_answer_text(dirty)
+
+    assert "Hr team" not in cleaned
+    assert "d aily" not in cleaned
+    assert "ap proval" not in cleaned
+    assert "ex pected" not in cleaned
+    assert "HR team" in cleaned
+    assert "[1]" in cleaned
 
 
 def test_mock_llm_usage_contains_token_counts() -> None:

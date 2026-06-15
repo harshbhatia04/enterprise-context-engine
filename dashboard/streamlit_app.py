@@ -14,10 +14,10 @@ DEFAULT_QUERY = "What is the invoice approval limit?"
 EVAL_TEST_LABEL = "237 passed, 1 skipped"
 
 DEMO_QUERIES = [
-    ("Finance answer demo", "What is the invoice approval limit?"),
-    ("Public handbook demo", "What does the handbook say about remote work?"),
-    ("No-evidence abstention demo", "What is the unreleased acquisition plan?"),
-    ("Engineering rollback demo", "How do we restore production after a bad release?"),
+    ("Finance answer demo", "What is the invoice approval limit?", "sample_docs", "finance_user"),
+    ("Intern blocked demo", "What is the invoice approval limit?", "sample_docs", "intern_user"),
+    ("Public handbook demo", "What does the handbook say about remote work?", "gitlab_handbook", "intern_user"),
+    ("No-evidence abstention demo", "What is the unreleased acquisition plan?", "gitlab_handbook", "intern_user"),
 ]
 
 
@@ -30,6 +30,7 @@ def main() -> None:
     )
     inject_global_styles()
     _ensure_session_defaults()
+    _apply_pending_demo_selection()
 
     sidebar_state = _render_sidebar()
     _render_header(sidebar_state)
@@ -53,6 +54,23 @@ def _ensure_session_defaults() -> None:
     st.session_state.setdefault("api_key", "")
     st.session_state.setdefault("screenshot_mode", False)
     st.session_state.setdefault("last_response", None)
+    st.session_state.setdefault("selected_data_source", "sample_docs")
+    st.session_state.setdefault("selected_user_id", "finance_user")
+
+
+def _apply_pending_demo_selection() -> None:
+    pending_demo = st.session_state.pop("pending_demo", None)
+    if not isinstance(pending_demo, dict):
+        return
+
+    demo_query = str(pending_demo.get("query", DEFAULT_QUERY))
+    demo_source = str(pending_demo.get("source", "sample_docs"))
+    demo_user = str(pending_demo.get("user", "finance_user"))
+    st.session_state["query_text"] = demo_query
+    st.session_state["selected_data_source"] = demo_source
+    st.session_state["selected_user_id"] = demo_user
+    st.session_state["last_response"] = None
+    _load_data_source(demo_source)
 
 
 def inject_global_styles() -> None:
@@ -316,7 +334,7 @@ def _render_sidebar() -> dict[str, Any]:
             st.session_state["api_key"] = ""
 
         st.markdown('<div class="ece-sidebar-section">Data Source</div>', unsafe_allow_html=True)
-        data_source = _render_data_source_selector(health, data_sources)
+        selected_data_source, active_backend_data_source, health = _render_data_source_selector(health, data_sources)
 
         st.markdown('<div class="ece-sidebar-section">User</div>', unsafe_allow_html=True)
         user_id = _render_user_selector(users)
@@ -340,7 +358,8 @@ def _render_sidebar() -> dict[str, Any]:
         "api_url": api_url,
         "auth_mode": auth_mode,
         "health": health,
-        "data_source": data_source,
+        "selected_data_source": selected_data_source,
+        "active_backend_data_source": active_backend_data_source,
         "user_id": user_id,
         "screenshot_mode": screenshot_mode,
     }
@@ -348,7 +367,8 @@ def _render_sidebar() -> dict[str, Any]:
 
 def _render_header(sidebar_state: dict[str, Any]) -> None:
     auth_mode = html.escape(str(sidebar_state.get("auth_mode", "off")))
-    data_source = html.escape(str(sidebar_state.get("data_source", "sample_docs")))
+    selected_data_source = html.escape(str(sidebar_state.get("selected_data_source", "sample_docs")))
+    active_backend_data_source = html.escape(str(sidebar_state.get("active_backend_data_source", "sample_docs")))
     user_id = html.escape(str(sidebar_state.get("user_id", "finance_user")))
     st.markdown(
         f"""
@@ -363,7 +383,8 @@ def _render_header(sidebar_state: dict[str, Any]) -> None:
             <span class="ece-badge ece-badge-blue">Citations</span>
             <span class="ece-badge ece-badge-green">Eval: 37/37 + 18/18</span>
             <span class="ece-badge">Auth: {auth_mode}</span>
-            <span class="ece-badge">Source: {data_source}</span>
+            <span class="ece-badge">Selected: {selected_data_source}</span>
+            <span class="ece-badge">Active backend source: {active_backend_data_source}</span>
             <span class="ece-badge">User: {user_id}</span>
           </div>
         </div>
@@ -372,44 +393,64 @@ def _render_header(sidebar_state: dict[str, Any]) -> None:
     )
 
 
-def _render_data_source_selector(health: Any, data_sources: Any) -> str:
+def _render_data_source_selector(health: Any, data_sources: Any) -> tuple[str, str, Any]:
+    active_backend_data_source = _active_backend_data_source(health)
     if not isinstance(data_sources, list) or not data_sources:
-        st.caption("Data source: sample_docs")
-        return "sample_docs"
+        st.caption(f"Active backend source: {active_backend_data_source}")
+        return active_backend_data_source, active_backend_data_source, health
 
     labels_by_id = {item["id"]: item["label"] for item in data_sources}
     descriptions_by_id = {item["id"]: item.get("description", "") for item in data_sources}
     source_ids = list(labels_by_id)
-    current_source = "sample_docs"
-    if isinstance(health, dict):
-        current_source = str(health.get("active_data_source", "sample_docs"))
-    default_index = source_ids.index(current_source) if current_source in source_ids else 0
+    selected_default = str(st.session_state.get("selected_data_source") or active_backend_data_source)
+    if selected_default not in source_ids:
+        selected_default = active_backend_data_source if active_backend_data_source in source_ids else source_ids[0]
+        st.session_state["selected_data_source"] = selected_default
     selected_source = st.selectbox(
         "Corpus",
         source_ids,
-        index=default_index,
+        index=source_ids.index(selected_default),
         format_func=lambda source_id: labels_by_id.get(source_id, source_id),
+        key="selected_data_source",
         label_visibility="collapsed",
     )
     if not st.session_state.get("screenshot_mode"):
         st.caption(descriptions_by_id.get(selected_source, ""))
+    if selected_source != active_backend_data_source:
+        st.warning(
+            f"Selected source is {labels_by_id.get(selected_source, selected_source)}, "
+            f"but the backend is still using {active_backend_data_source}. Loading selected source now."
+        )
+        _, health = _load_data_source(selected_source)
+        active_backend_data_source = _active_backend_data_source(health)
     if st.button("Load data source", width="stretch"):
-        result = _api_post("/ingest/data-source", {"mode": selected_source}, default=None)
+        result, health = _load_data_source(selected_source)
+        active_backend_data_source = _active_backend_data_source(health)
         if isinstance(result, dict):
             st.success(
                 f"Loaded {result.get('active_data_source')} with "
                 f"{result.get('documents_ingested', 0)} documents and "
                 f"{result.get('chunks_created', 0)} chunks."
             )
-    return selected_source
+    st.caption(f"Active backend source: {active_backend_data_source}")
+    return selected_source, active_backend_data_source, health
 
 
 def _render_user_selector(users: Any) -> str:
     user_ids = [user["user_id"] for user in users] if isinstance(users, list) else []
     if not user_ids:
         user_ids = ["finance_user"]
-    default_index = user_ids.index("finance_user") if "finance_user" in user_ids else 0
-    return st.selectbox("Demo user", user_ids, index=default_index, label_visibility="collapsed")
+    selected_default = str(st.session_state.get("selected_user_id") or "finance_user")
+    if selected_default not in user_ids:
+        selected_default = "finance_user" if "finance_user" in user_ids else user_ids[0]
+        st.session_state["selected_user_id"] = selected_default
+    return st.selectbox(
+        "Demo user",
+        user_ids,
+        index=user_ids.index(selected_default),
+        key="selected_user_id",
+        label_visibility="collapsed",
+    )
 
 
 def ask_assistant_page(sidebar_state: dict[str, Any]) -> None:
@@ -417,12 +458,15 @@ def ask_assistant_page(sidebar_state: dict[str, Any]) -> None:
     health = sidebar_state.get("health")
     document_count = health.get("document_count", 0) if isinstance(health, dict) else 0
     chunk_count = health.get("chunk_count", 0) if isinstance(health, dict) else 0
+    selected_data_source = str(sidebar_state["selected_data_source"])
+    active_backend_data_source = str(sidebar_state["active_backend_data_source"])
 
     st.markdown(
         f"""
         <div class="ece-mini-grid">
           <div class="ece-mini-card"><div class="label">Selected user</div><div class="value">{html.escape(str(sidebar_state["user_id"]))}</div></div>
-          <div class="ece-mini-card"><div class="label">Data source</div><div class="value">{html.escape(str(sidebar_state["data_source"]))}</div></div>
+          <div class="ece-mini-card"><div class="label">Selected source</div><div class="value">{html.escape(selected_data_source)}</div></div>
+          <div class="ece-mini-card"><div class="label">Active backend source</div><div class="value">{html.escape(active_backend_data_source)}</div></div>
           <div class="ece-mini-card"><div class="label">Documents</div><div class="value">{document_count}</div></div>
           <div class="ece-mini-card"><div class="label">Chunks</div><div class="value">{chunk_count}</div></div>
         </div>
@@ -432,9 +476,14 @@ def ask_assistant_page(sidebar_state: dict[str, Any]) -> None:
 
     st.markdown("#### Suggested demo queries")
     query_cols = st.columns(4)
-    for index, (label, demo_query) in enumerate(DEMO_QUERIES):
+    for index, (label, demo_query, demo_source, demo_user) in enumerate(DEMO_QUERIES):
         if query_cols[index].button(label, width="stretch"):
-            st.session_state["query_text"] = demo_query
+            st.session_state["pending_demo"] = {
+                "query": demo_query,
+                "source": demo_source,
+                "user": demo_user,
+            }
+            st.rerun()
 
     st.markdown('<div class="ece-panel">', unsafe_allow_html=True)
     query = st.text_area("Question", key="query_text", height=96)
@@ -454,6 +503,10 @@ def ask_assistant_page(sidebar_state: dict[str, Any]) -> None:
     st.markdown("</div>", unsafe_allow_html=True)
 
     if ask_clicked:
+        if selected_data_source != active_backend_data_source:
+            _, refreshed_health = _load_data_source(selected_data_source)
+            sidebar_state["health"] = refreshed_health
+            sidebar_state["active_backend_data_source"] = _active_backend_data_source(refreshed_health)
         response = _api_post(
             "/query",
             {
@@ -468,7 +521,11 @@ def ask_assistant_page(sidebar_state: dict[str, Any]) -> None:
 
     response = st.session_state.get("last_response")
     if isinstance(response, dict):
-        _render_answer(response, screenshot_mode=bool(sidebar_state.get("screenshot_mode")))
+        _render_answer(
+            response,
+            sidebar_state=sidebar_state,
+            screenshot_mode=bool(sidebar_state.get("screenshot_mode")),
+        )
     else:
         _card(
             "Ready",
@@ -477,9 +534,11 @@ def ask_assistant_page(sidebar_state: dict[str, Any]) -> None:
         )
 
 
-def _render_answer(response: dict[str, Any], screenshot_mode: bool) -> None:
+def _render_answer(response: dict[str, Any], sidebar_state: dict[str, Any], screenshot_mode: bool) -> None:
     answer = str(response.get("answer", ""))
     safe_abstain = bool(response.get("safe_abstain", False))
+    citations = response.get("citations", [])
+    _render_answer_context(response, citations, sidebar_state)
     if safe_abstain:
         _card(
             "Safe Abstention",
@@ -489,7 +548,6 @@ def _render_answer(response: dict[str, Any], screenshot_mode: bool) -> None:
     else:
         _card("Answer", answer, modifier="ece-answer")
 
-    citations = response.get("citations", [])
     if citations:
         st.markdown("#### Citations")
         for index, citation in enumerate(citations, start=1):
@@ -507,6 +565,7 @@ def _render_answer(response: dict[str, Any], screenshot_mode: bool) -> None:
 def _render_citation(index: int, citation: dict[str, Any]) -> None:
     title = html.escape(str(citation.get("document_title", "Untitled document")))
     section = html.escape(str(citation.get("section_title", "Unknown section")))
+    source = html.escape(str(citation.get("source_name") or "unknown"))
     department = html.escape(str(citation.get("department", "unknown")))
     access_level = html.escape(str(citation.get("access_level", "unknown")))
     method = html.escape(str(citation.get("retrieval_method", "retrieval")))
@@ -517,12 +576,41 @@ def _render_citation(index: int, citation: dict[str, Any]) -> None:
           <div class="ece-card-title">Citation {index}</div>
           <strong>Document: {title}</strong>
           <div class="ece-muted">Section: {section}</div>
+          <div class="ece-muted">Source: {source}</div>
           <div class="ece-badge-row">
             <span class="ece-badge">Department: {department}</span>
             <span class="ece-badge">Access: {access_level}</span>
             <span class="ece-badge">Method: {method}</span>
             <span class="ece-badge">Score: {score}</span>
           </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _render_answer_context(
+    response: dict[str, Any],
+    citations: list[dict[str, Any]],
+    sidebar_state: dict[str, Any],
+) -> None:
+    debug = response.get("debug", {})
+    user_id = html.escape(str(response.get("user_id") or sidebar_state.get("user_id", "unknown")))
+    data_source = html.escape(str(debug.get("active_data_source") or "unknown"))
+    access_scope = "No accessible supporting documents"
+    if citations:
+        access_levels = {str(citation.get("access_level", "unknown")) for citation in citations}
+        if access_levels <= {"public", "general"}:
+            access_scope = "Public/general documents only"
+        else:
+            access_scope = "Permission-scoped accessible documents"
+    st.markdown(
+        f"""
+        <div class="ece-mini-grid">
+          <div class="ece-mini-card"><div class="label">Answered as</div><div class="value">{user_id}</div></div>
+          <div class="ece-mini-card"><div class="label">Data source</div><div class="value">{data_source}</div></div>
+          <div class="ece-mini-card"><div class="label">Access scope</div><div class="value">{html.escape(access_scope)}</div></div>
+          <div class="ece-mini-card"><div class="label">Citation cards</div><div class="value">{len(citations)}</div></div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -637,7 +725,7 @@ def health_page(sidebar_state: dict[str, Any]) -> None:
     st.subheader("Health")
     health = sidebar_state.get("health")
     storage_backend = health.get("storage_backend", "memory") if isinstance(health, dict) else "memory"
-    active_source = health.get("active_data_source", "sample_docs") if isinstance(health, dict) else "sample_docs"
+    active_source = _active_backend_data_source(health)
     document_count = health.get("document_count", 0) if isinstance(health, dict) else 0
     chunk_count = health.get("chunk_count", 0) if isinstance(health, dict) else 0
     backend_status = "Connected" if isinstance(health, dict) and health.get("status") == "ok" else "Offline"
@@ -650,7 +738,7 @@ def health_page(sidebar_state: dict[str, Any]) -> None:
           <div class="ece-mini-card"><div class="label">Auth mode</div><div class="value">{html.escape(str(sidebar_state.get("auth_mode", "off")))}</div></div>
           <div class="ece-mini-card"><div class="label">Storage backend</div><div class="value">{html.escape(str(storage_backend))}</div></div>
           <div class="ece-mini-card"><div class="label">Vector backend</div><div class="value">{html.escape(str(vector_backend))}</div></div>
-          <div class="ece-mini-card"><div class="label">Active data source</div><div class="value">{html.escape(str(active_source))}</div></div>
+          <div class="ece-mini-card"><div class="label">Active backend source</div><div class="value">{html.escape(str(active_source))}</div></div>
           <div class="ece-mini-card"><div class="label">Documents loaded</div><div class="value">{document_count}</div></div>
           <div class="ece-mini-card"><div class="label">Chunks loaded</div><div class="value">{chunk_count}</div></div>
         </div>
@@ -729,6 +817,18 @@ def _api_post(path: str, payload: dict[str, Any], default: Any) -> Any:
         return default
 
 
+def _load_data_source(selected_data_source: str) -> tuple[Any, Any]:
+    result = _api_post("/ingest/data-source", {"mode": selected_data_source}, default=None)
+    refreshed_health = _api_get("/health", default={}, show_error=False)
+    return result, refreshed_health
+
+
+def _active_backend_data_source(health: Any) -> str:
+    if isinstance(health, dict):
+        return str(health.get("active_data_source", "sample_docs"))
+    return "sample_docs"
+
+
 def _debug_summary(debug: dict[str, Any]) -> dict[str, Any]:
     allowed_keys = {
         "llm_called",
@@ -742,6 +842,7 @@ def _debug_summary(debug: dict[str, Any]) -> dict[str, Any]:
         "included_chunk_count",
         "auth_mode",
         "authenticated_user_id",
+        "active_data_source",
     }
     return {key: value for key, value in debug.items() if key in allowed_keys}
 

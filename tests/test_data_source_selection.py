@@ -1,4 +1,5 @@
 import pytest
+import re
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -97,7 +98,11 @@ def test_query_uses_active_gitlab_public_corpus_for_intern(client: TestClient) -
     assert payload["safe_abstain"] is False
     assert payload["citations"]
     assert payload["debug"]["active_data_source"] == "gitlab_handbook"
+    assert "handbook-style guidance" in payload["answer"].lower()
+    assert "remote work" in payload["answer"].lower()
+    assert re.search(r"\[\d+\]", payload["answer"])
     assert any(citation["access_level"] == "public" for citation in payload["citations"])
+    assert all(citation["source_name"] == "gitlab_handbook" for citation in payload["citations"])
 
 
 def test_logs_clear_when_data_source_changes(client: TestClient) -> None:

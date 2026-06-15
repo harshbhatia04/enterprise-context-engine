@@ -177,6 +177,9 @@ In default local mode:
 - Auth is off
 - no API key is required
 - Data source and demo user can be selected from the sidebar
+- The `Public handbook demo` button selects `gitlab_handbook`, uses `intern_user`, and prepares the remote-work query
+- Citation cards show document, section, source, department, and access metadata
+- The dashboard separates the selected sidebar source from the active backend source and reloads backend health after source changes
 
 The API key input appears only when `ECE_AUTH_MODE=api_key`.
 

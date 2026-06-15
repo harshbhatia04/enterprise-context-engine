@@ -20,6 +20,23 @@ Before taking screenshots:
 4. Keep Auth: off unless specifically demonstrating API-key auth.
 5. Do not show API keys.
 6. Do not show raw debug output.
+7. Before taking each screenshot, confirm the answer metadata card shows the expected active data source.
+
+Expected active data source by screenshot:
+
+- Finance answer screenshot: `sample_docs`
+- Intern blocked screenshot: `sample_docs`
+- Public handbook screenshot: `gitlab_handbook`
+- No-evidence screenshot: `gitlab_handbook`
+
+Do not post screenshots where the sidebar-selected source differs from the answer metadata source.
+
+For the public handbook screenshot:
+
+- Data source: GitLab Handbook-style Docs
+- User: intern_user
+- Query: What does the handbook say about remote work?
+- Ensure citation cards are visible.
 
 Expected screenshots:
 

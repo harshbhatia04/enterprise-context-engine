@@ -9,6 +9,8 @@ Enterprise Context Engine demonstrates how those pieces fit together in a local,
 For this local demo, auth is off, so no API key is required. The dashboard connects to the local FastAPI backend
 running at `127.0.0.1:8000`.
 
+Always click the demo buttons or load the data source before asking. Confirm active backend source before screenshot capture.
+
 ## Screenshot-Friendly Demo Sequence
 
 1. Show the dashboard Health page with the local backend online.
@@ -50,7 +52,9 @@ What does the handbook say about remote work?
 
 Expected: answer with citations.
 
-Explain: Public-source docs remain accessible even to low-privilege users.
+Use `intern_user` for the public handbook demo to show that public sources remain accessible to low-privilege users.
+
+Explain: Public-source docs remain accessible even to low-privilege users, and the GitLab Handbook-style fixture is synthetic demo content, not official GitLab content.
 
 ## 2:45-3:30 - No-Evidence Abstention
 
@@ -72,7 +76,7 @@ Show:
 sample_docs: 37/37
 gitlab_handbook: 18/18
 restricted leak rate: 0.00
-tests: 233 passed, 1 skipped
+tests: 237 passed, 1 skipped
 ```
 
 Mention CI/CD, deterministic eval, ruff checks, import smoke tests, and release-check commands.

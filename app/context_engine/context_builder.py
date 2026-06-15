@@ -114,12 +114,17 @@ class ContextBuilder:
     def _format_block(self, source_id: int, chunk: RerankedResult, text: str) -> str:
         version = chunk.metadata.get("version")
         effective_date = chunk.metadata.get("effective_date")
+        source_name = chunk.metadata.get("source_name") or self._source_name_from_path(
+            chunk.metadata.get("source_path"),
+        )
         lines = [
             f"[{source_id}]",
             f"Document: {chunk.document_title}",
             f"Department: {chunk.department}",
             f"Section: {chunk.section_title}",
         ]
+        if source_name:
+            lines.append(f"Source: {source_name}")
         if version:
             lines.append(f"Version: {version}")
         if effective_date:
@@ -151,6 +156,15 @@ class ContextBuilder:
     @staticmethod
     def _word_count(text: str) -> int:
         return len(text.split())
+
+    @staticmethod
+    def _source_name_from_path(source_path: object) -> str | None:
+        normalized = str(source_path or "").replace("\\", "/").lower()
+        if "gitlab_handbook" in normalized:
+            return "gitlab_handbook"
+        if "sample_docs" in normalized:
+            return "sample_docs"
+        return None
 
 
 def build_secure_context(

@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.storage.app_state import reset_app_state
+from scripts.create_gitlab_fixture_docs import create_gitlab_fixture_docs
 
 
 @pytest.fixture(autouse=True)
@@ -45,6 +46,71 @@ def test_health_returns_counts_after_ingest(client: TestClient) -> None:
     assert response.json()["is_ingested"] is True
     assert response.json()["document_count"] == 24
     assert response.json()["chunk_count"] == 120
+
+
+def test_data_source_ingest_counts_match_demo_fixtures(client: TestClient) -> None:
+    create_gitlab_fixture_docs()
+
+    sample = client.post("/ingest/data-source", json={"mode": "sample_docs"}).json()
+    gitlab = client.post("/ingest/data-source", json={"mode": "gitlab_handbook"}).json()
+    combined = client.post("/ingest/data-source", json={"mode": "combined"}).json()
+
+    assert sample["documents_ingested"] == 24
+    assert sample["chunks_created"] == 120
+    assert gitlab["documents_ingested"] == 8
+    assert gitlab["chunks_created"] == 32
+    assert combined["documents_ingested"] == 32
+    assert combined["chunks_created"] == 152
+
+
+def test_health_counts_follow_active_gitlab_data_source(client: TestClient) -> None:
+    create_gitlab_fixture_docs()
+    client.post("/ingest/data-source", json={"mode": "gitlab_handbook"})
+
+    health = client.get("/health").json()
+
+    assert health["active_data_source"] == "gitlab_handbook"
+    assert health["document_count"] == 8
+    assert health["chunk_count"] == 32
+
+
+def test_gitlab_handbook_intern_remote_work_query_has_citations(client: TestClient) -> None:
+    create_gitlab_fixture_docs()
+    client.post("/ingest/data-source", json={"mode": "gitlab_handbook"})
+
+    response = client.post(
+        "/query",
+        json={
+            "user_id": "intern_user",
+            "query": "What does the handbook say about remote work?",
+            "top_k": 5,
+        },
+    )
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload["safe_abstain"] is False
+    assert payload["citations"]
+    assert payload["debug"]["active_data_source"] == "gitlab_handbook"
+
+
+def test_sample_docs_finance_invoice_query_has_citations(client: TestClient) -> None:
+    client.post("/ingest/data-source", json={"mode": "sample_docs"})
+
+    response = client.post(
+        "/query",
+        json={
+            "user_id": "finance_user",
+            "query": "What is the invoice approval limit?",
+            "top_k": 5,
+        },
+    )
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload["safe_abstain"] is False
+    assert payload["citations"]
+    assert payload["debug"]["active_data_source"] == "sample_docs"
 
 
 def test_users_includes_demo_users(client: TestClient) -> None:

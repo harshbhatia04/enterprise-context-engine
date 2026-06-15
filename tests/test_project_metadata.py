@@ -60,6 +60,11 @@ def test_dashboard_contains_showcase_copy_and_auth_branch() -> None:
     assert 'layout="wide"' in text
     assert "No API key required for local demo" in text
     assert "Screenshot mode" in text
+    assert "Public handbook demo" in text
+    assert '"gitlab_handbook", "intern_user"' in text
+    assert "Answered as" in text
+    assert "Data source" in text
+    assert "Source:" in text
     assert "Permission-aware context engineering" in text
     assert "Evidence Gate" in text
     assert 'auth_mode == "api_key"' in text
